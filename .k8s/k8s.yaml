@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fund-insight
+  namespace: default
+  labels:
+    app: fund-insight
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fund-insight
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: fund-insight
+    spec:
+      containers:
+        - name: fund-insight
+          image: registry.cn-beijing.aliyuncs.com/fundwit/fund-insight:sha-498d460
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: JAEGER_ENDPOINT
+            value: http://jaeger:14268/api/traces
+          - name: MYSQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: password
+                name: mysql
+          - name: MYSQL_USERNAME
+            valueFrom:
+              secretKeyRef:
+                key: username
+                name: mysql
+          - name: DATABASE_URL
+            value: mysql://${MYSQL_USERNAME}:${MYSQL_PASSWORD}@(mysql.default:3306)/fund-insight?charset=utf8mb4&parseTime=True&loc=Local
+          ports:
+            - containerPort: 80
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+      dnsPolicy: ClusterFirst
+      imagePullSecrets:
+        - name: cr-aliyun
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: fund-insight
+  name: fund-insight
+  namespace: default
+spec:
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 80
+  selector:
+    app: fund-insight
+  sessionAffinity: None
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fund-insight
+  namespace: default
+spec:
+  tls:
+    - hosts:
+        - fund-insight-core.fundwit.com
+      secretName: tls-fundwit.com
+  rules:
+    - host: fund-insight-core.fundwit.com
+      http:
+        paths:
+          - backend:
+              service:
+                name: fund-insight
+                port:
+                  number: 80
+            path: /
+            pathType: Prefix
