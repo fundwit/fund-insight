@@ -54,7 +54,11 @@ jobs:
     - name: Test
       run: |
         TZ='Asia/Shanghai' go test -race -coverprofile=coverage.txt -covermode=atomic ./...
-        bash <(curl -s https://codecov.io/bash)
+
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v4.0.1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
 
     - name: code coverage gate
       run: |
