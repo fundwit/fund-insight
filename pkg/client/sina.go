@@ -1,6 +1,7 @@
 package client
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -25,6 +26,10 @@ type SinaSeriesGetter interface {
 }
 
 type SinaClient struct {
+}
+
+func init() {
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 }
 
 func (c *SinaClient) QueryCodeSeriesByDay(code string) (Points, error) {
