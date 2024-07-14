@@ -116,7 +116,7 @@ jobs:
     - name: Build
       run: |
         go build -v .
-        mv fund-insight .docker/
+        mv fundinsight .docker/fund-insight
 
     - name: Build and push Docker images
       env:
